@@ -1,0 +1,503 @@
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>WhatsApp Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/react@18.0.0/umd/react.development.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.0.0/umd/react-dom.development.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #f5f5f5;
+  color: #333;
+  overflow-x: hidden;
+}
+.container {
+  display: flex;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+.sidebar {
+  width: 280px;
+  background-color: white;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+}
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #075E54;
+  color: white;
+  display: flex;
+  align-items: center;
+}
+.sidebar-header i {
+  margin-right: 10px;
+  font-size: 24px;
+}
+.search-bar {
+  padding: 15px 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+.search-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 20px;
+  background-color: #f1f1f1;
+  outline: none;
+  font-size: 14px;
+}
+.users-list {
+  flex: 1;
+  overflow-y: auto;
+}
+.user-item {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.user-item:hover {
+  background-color: #f5f5f5;
+}
+.user-item.active {
+  background-color: #e8f5e9;
+}
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 12px;
+  object-fit: cover;
+}
+.user-info h4 {
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+.user-info p {
+  font-size: 13px;
+  color: #888;
+}
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.05);
+}
+.chat-header {
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #075E54;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.chat-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+.chat-header p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.8;
+  margin-left: 10px;
+}
+.delete-icon {
+  color: white;
+  cursor: pointer;
+  font-size: 18px;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+.delete-icon:hover {
+  opacity: 1;
+}
+.chat-messages {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background-color: #f9f9f9;
+}
+.message {
+  display: flex;
+  margin-bottom: 16px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* ✅ User messages LEFT, Bot messages RIGHT */
+.message.user {
+  justify-content: flex-start;
+}
+.message.bot {
+  justify-content: flex-end;
+}
+.message-content {
+  max-width: 70%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  line-height: 1.4;
+  position: relative;
+}
+.message.user .message-content {
+  background-color: #dcf8c6;
+  text-align: left;
+}
+.message.bot .message-content {
+  background-color: #e5e5ea;
+  text-align: right;
+}
+.message-time {
+  font-size: 11px;
+  color: #999;
+  margin-top: 4px;
+  text-align: right;
+}
+.input-area {
+  padding: 20px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  gap: 10px;
+  background-color: white;
+}
+.input-field {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 24px;
+  outline: none;
+  font-size: 14px;
+}
+.send-button {
+  padding: 12px 20px;
+  background-color: #075E54;
+  color: white;
+  border: none;
+  border-radius: 24px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+.send-button:hover {
+  background-color: #065245;
+}
+.no-user-selected {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #888;
+  font-size: 18px;
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const UserItem = ({ user, onSelect, isActive }) => (
+  <div 
+    className={`user-item ${isActive ? 'active' : ''}`}
+    onClick={() => onSelect(user)}
+  >
+    <img 
+      src={`https://picsum.photos/seed/${user.userNumber}/40/40.jpg`} 
+      alt={user.userName} 
+      className="user-avatar" 
+    />
+    <div className="user-info">
+      <h4>{user.userName || `+${user.userNumber}`}</h4>
+      <p>
+        Last active:{" "}
+        {user.lastInteracted
+          ? new Date(user.lastInteracted).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : "—"}
+      </p>
+    </div>
+  </div>
+);
+
+const Message = ({ message, isUser }) => (
+  <div className={`message ${isUser ? 'user' : 'bot'}`}>
+    <div className="message-content">
+      <strong>{isUser ? 'You' : 'Bot'}:</strong> {message.text}
+    </div>
+    <div className="message-time">{message.time}</div>
+  </div>
+);
+
+function App() {
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userMsg, setUserMsg] = useState("");
+  const messagesEndRef = useRef(null);
+  const wsRef = useRef(null);
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch("http://54.221.144.70:3000/users");
+      const data = await res.json();
+
+      const sortedUsers = data.sort(
+        (a, b) => new Date(b.lastInteracted) - new Date(a.lastInteracted)
+      );
+
+      setUsers(sortedUsers);
+    } catch (err) {
+      console.error("Error fetching users:", err);
+    }
+  };
+
+  // Update selectedUser when users array changes
+  useEffect(() => {
+    if (selectedUser) {
+      const updatedUser = users.find(user => user.userNumber === selectedUser.userNumber);
+      if (updatedUser && JSON.stringify(updatedUser) !== JSON.stringify(selectedUser)) {
+        setSelectedUser(updatedUser);
+      }
+    }
+  }, [users, selectedUser]);
+
+  useEffect(() => {
+    fetchUsers();
+
+    wsRef.current = new WebSocket("ws://54.221.144.70:3001");
+
+    wsRef.current.onopen = () => {
+      console.log("✅ WebSocket connected");
+    };
+
+    wsRef.current.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === "new_message") {
+          setUsers(prevUsers => {
+            const updated = prevUsers.map(u =>
+              u.userNumber === data.userNumber
+                ? { 
+                    ...u, 
+                    conversations: [...(u.conversations || []), data.conversation],
+                    lastInteracted: new Date().toISOString()
+                  }
+                : u
+            );
+
+            return updated.sort(
+              (a, b) => new Date(b.lastInteracted) - new Date(a.lastInteracted)
+            );
+          });
+
+          // Force update selectedUser if it's the current user
+          if (selectedUser?.userNumber === data.userNumber) {
+            setSelectedUser(prev => ({
+              ...prev,
+              conversations: [...(prev.conversations || []), data.conversation],
+              lastInteracted: new Date().toISOString()
+            }));
+          }
+        }
+        else if (data.type === "new_user") {
+          setUsers(prev => {
+            const exists = prev.find(u => u.userNumber === data.user.userNumber);
+            if (exists) return prev;
+            return [
+              data.user,
+              ...prev
+            ].sort((a, b) => new Date(b.lastInteracted) - new Date(a.lastInteracted));
+          });
+        }
+
+      } catch (err) {
+        console.error("WebSocket message parse error:", err);
+      }
+    };
+
+    wsRef.current.onclose = () => {
+      console.log("⚠️ WebSocket disconnected. Reconnecting in 3s...");
+      setTimeout(() => {
+        if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
+          wsRef.current = new WebSocket("ws://54.221.144.70:3001");
+        }
+      }, 3000);
+    };
+
+    wsRef.current.onerror = (err) => {
+      console.error("WebSocket error:", err);
+      wsRef.current.close();
+    };
+
+    return () => {
+      wsRef.current?.close();
+    };
+  }, []); // Remove selectedUser from dependencies
+
+  useEffect(() => {
+    if (messagesEndRef.current && selectedUser) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [selectedUser?.conversations]); // Depend on conversations specifically
+
+  const sendMessage = async () => {
+    if (!userMsg || !selectedUser) return;
+
+    const newConversation = { 
+      userMsg, 
+      botReply: "", // Empty initially, will be filled by backend
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    // Optimistically update UI
+    setSelectedUser(prev => ({
+      ...prev,
+      conversations: [...(prev.conversations || []), newConversation],
+      lastInteracted: new Date().toISOString()
+    }));
+
+    setUsers(prev => {
+      const updated = prev.map(u =>
+        u.userNumber === selectedUser.userNumber
+          ? { 
+              ...u, 
+              conversations: [...(u.conversations || []), newConversation],
+              lastInteracted: new Date().toISOString()
+            }
+          : u
+      );
+      return updated.sort(
+        (a, b) => new Date(b.lastInteracted) - new Date(a.lastInteracted)
+      );
+    });
+
+    setUserMsg("");
+
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: "new_message",
+        userNumber: selectedUser.userNumber,
+        conversation: newConversation
+      }));
+    }
+  };
+
+  const handleDeleteChat = async () => {
+    if (selectedUser) {
+      const number = selectedUser.userNumber;
+      setUsers(prev => prev.filter(u => u.userNumber !== number));
+      setSelectedUser(null);
+      console.log(`Deleted conversation with ${number}`);
+    }
+  };
+
+  return (
+    <div className="container">
+      <div className="sidebar">
+        <div className="sidebar-header">
+          <i className="fab fa-whatsapp"></i>
+          <h2>WhatsApp Dashboard</h2>
+        </div>
+        <div className="search-bar">
+          <input type="text" placeholder="Search contacts..." className="search-input"/>
+        </div>
+        <div className="users-list">
+          {users.length > 0 ? (
+            users.map(user => (
+              <UserItem 
+                key={user.userNumber} 
+                user={user} 
+                onSelect={setSelectedUser} 
+                isActive={selectedUser?.userNumber === user.userNumber}
+              />
+            ))
+          ) : (
+            <p style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
+              Loading users...
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="main">
+        {selectedUser ? (
+          <>
+            <div className="chat-header">
+              <div>
+                <h3>{selectedUser.userName || `+${selectedUser.userNumber}`}</h3>
+                <p>Mobile: +{selectedUser.userNumber}</p>
+              </div>
+              <div>
+                <p>Course of interest: {selectedUser.course || "Not selected"}</p>
+              </div>
+              <i 
+                className="fas fa-trash-alt delete-icon" 
+                title="Delete Chat"
+                onClick={handleDeleteChat}
+              ></i>
+            </div>
+            <div className="chat-messages">
+              {(selectedUser.conversations || []).map((conv, idx) => (
+                <React.Fragment key={idx}>
+                  <Message 
+                    message={{ text: conv.userMsg, time: conv.time }} 
+                    isUser={true} 
+                  />
+                  {conv.botReply && (
+                    <Message 
+                      message={{ text: conv.botReply, time: conv.time }} 
+                      isUser={false} 
+                    />
+                  )}
+                </React.Fragment>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+            <div className="input-area">
+              <input
+                type="text"
+                value={userMsg}
+                onChange={e => setUserMsg(e.target.value)}
+                placeholder="Type your message..."
+                className="input-field"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    sendMessage();
+                  }
+                }}
+              />
+              <button onClick={sendMessage} className="send-button">
+                Send
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="no-user-selected">
+            Select a contact to start chatting
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
